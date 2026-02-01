@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stunning 3D Hand Particles</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; filter: contrast(1.1) brightness(1.2); }
+        #info {
+            position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.6);
+            font-size: 11px; letter-spacing: 1px; pointer-events: none;
+        }
+        /* Style untuk dat.GUI */
+        .dg.main a { color: #fff !important; }
+        .dg.main .close-button { background-color: #333 !important; }
+        .dg.main .title { background-color: #222 !important; }
+    </style>
+</head>
+<body>
+    <div id="info">1: Love | 2: Rose | 3: Star</div>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
