@@ -55,7 +55,7 @@ function generateShapePositions(shapeIndex: number) {
         let x = 0, y = 0, z = 0;
 
         if (shapeIndex === 1) { 
-            const s = SHAPE_SCALE * 0.13; 
+            const s = SHAPE_SCALE * 0.09; 
             x = 16 * Math.pow(Math.sin(t), 3);
             y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
             x *= s * r_rand; y *= s * r_rand;
