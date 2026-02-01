@@ -12,7 +12,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 
 camera.position.z = 5;
@@ -97,11 +97,10 @@ function generateShapePositions(shapeIndex: number) {
     return newTarget;
 }
 
-// --- 4. HAND TRACKING LOGIC ---
+// --- 4. HAND TRACKING LOGIC (FULL FIX FOR CHROME/SAFARI) ---
 let currentShape = -1;
 let rotX = 0, rotY = 0;
 
-// Gunakan versi spesifik supaya gak bentrok di Vercel
 const hands = new Hands({ 
     locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}` 
 });
@@ -109,7 +108,7 @@ const hands = new Hands({
 hands.setOptions({ 
     maxNumHands: 1, 
     modelComplexity: 1, 
-    minDetectionConfidence: 0.5, // Dibuat lebih sensitif untuk testing awal
+    minDetectionConfidence: 0.6, 
     minTrackingConfidence: 0.5 
 });
 
@@ -134,58 +133,56 @@ hands.onResults((res: Results) => {
     }
 });
 
-// Setup Video Preview (Wajib pakai attributes ini supaya muncul di Chrome/Vercel)
 const video = document.createElement('video');
 Object.assign(video.style, { 
     position:'fixed', bottom:'15px', left:'15px', width:'130px', 
-    borderRadius:'10px', transform:'scaleX(-1)', opacity:'0.7', // Naikin opacity buat ngecek
-    border:'2px solid cyan', zIndex: '2000' 
+    borderRadius:'10px', transform:'scaleX(-1)', opacity:'0.7',
+    border:'2px solid cyan', zIndex: '2000', display: 'none'
 });
-
 video.setAttribute('autoplay', '');
 video.setAttribute('muted', '');
-video.setAttribute('playsinline', ''); 
+video.setAttribute('playsinline', ''); // Wajib untuk Safari
 document.body.appendChild(video);
 
-// Fungsi Sakti buat ngejalanin kamera
-async function initCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: 640, height: 480 } 
-        });
-        video.srcObject = stream;
-        
-        // Tunggu video bener-bener "siap" sebelum kirim ke MediaPipe
-        await new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                resolve(true);
-            };
-        });
+// FUNGSI INIT DENGAN GESTURE USER
+async function startEverything() {
+    const startBtn = document.getElementById('startBtn');
+    const overlay = document.getElementById('overlay');
 
-        const detect = async () => {
-            if (video.readyState >= 2) {
-                await hands.send({ image: video });
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480, facingMode: "user" } 
+                });
+                video.srcObject = stream;
+                video.style.display = 'block';
+                if(overlay) overlay.style.display = 'none';
+
+                await video.play();
+
+                const detect = async () => {
+                    // Cek currentTime > 0 untuk Chrome
+                    if (video.readyState >= 2 && video.currentTime > 0) {
+                        await hands.send({ image: video });
+                    }
+                    requestAnimationFrame(detect);
+                };
+                detect();
+            } catch (err) {
+                alert("Kamera Error: " + err);
             }
-            requestAnimationFrame(detect);
-        };
-        detect();
-        console.log("Kamera & MediaPipe jalan!");
-    } catch (err) {
-        console.error("Gagal buka kamera:", err);
-        alert("Woy, aktifin izin kameranya di browser!");
+        }, { once: true });
     }
 }
 
-// Jalankan fungsi kamera
-initCamera();
+startEverything();
 
 // --- 5. ANIMATION LOOP ---
 function animate() {
     requestAnimationFrame(animate);
     const pos = geometry.attributes.position.array as Float32Array;
     
-    // Smooth Transition
     for (let i = 0; i < pos.length; i++) {
         pos[i] += (targetArray[i] - pos[i]) * SMOOTHING;
     }
@@ -202,12 +199,7 @@ animate();
 
 // --- 6. DAT.GUI ---
 const gui = new dat.GUI();
-const params = {
-    kehalusan: SMOOTHING,
-    skala: SHAPE_SCALE,
-    ukuranTitik: material.size
-};
-
+const params = { kehalusan: SMOOTHING, skala: SHAPE_SCALE, ukuranTitik: material.size };
 gui.add(params, 'kehalusan', 0.01, 0.2).name('Transition').onChange(v => SMOOTHING = v);
 gui.add(params, 'skala', 0.5, 4.0).name('Global Scale').onChange(v => {
     SHAPE_SCALE = v;

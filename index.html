@@ -5,21 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stunning 3D Hand Particles</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; filter: contrast(1.1) brightness(1.2); }
-        #info {
-            position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.6);
-            font-size: 11px; letter-spacing: 1px; pointer-events: none;
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        /* Style untuk dat.GUI */
-        .dg.main a { color: #fff !important; }
-        .dg.main .close-button { background-color: #333 !important; }
-        .dg.main .title { background-color: #222 !important; }
+        
+        canvas { 
+            display: block; 
+            filter: contrast(1.1) brightness(1.1); 
+        }
+
+        #info {
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            color: rgba(255,255,255,0.5);
+            font-size: 12px; 
+            letter-spacing: 2px; 
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* OVERLAY UNTUK CHROME & SAFARI */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(10,10,10,0.9) 0%, rgba(0,0,0,1) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+
+        #startBtn {
+            padding: 18px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            background: cyan;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        #startBtn:hover {
+            background: #fff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        #overlay p {
+            color: rgba(255,255,255,0.4);
+            margin-top: 20px;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        /* dat.GUI Custom Style */
+        .dg.main { 
+            right: 20px !important; 
+        }
     </style>
 </head>
 <body>
-    <div id="info">1: Love | 2: Rose | 3: Star</div>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script> -->
+    <div id="info">GESTURE: 1: LOVE | 2: ROSE | 3: STAR</div>
+
+    <div id="overlay">
+        <button id="startBtn">START EXPERIENCE</button>
+        <p>Allow camera access to begin</p>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
