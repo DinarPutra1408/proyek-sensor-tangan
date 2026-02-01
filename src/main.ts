@@ -97,11 +97,11 @@ function generateShapePositions(shapeIndex: number) {
     return newTarget;
 }
 
-// --- 4. PERBAIKAN HAND TRACKING LOGIC (AGAR DETEKSI DI PRODUCTION) ---
+// --- 4. HAND TRACKING LOGIC ---
 let currentShape = -1;
 let rotX = 0, rotY = 0;
 
-// Versi MediaPipe yang lebih stabil untuk hosting
+// Gunakan versi spesifik supaya gak bentrok di Vercel
 const hands = new Hands({ 
     locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}` 
 });
@@ -109,8 +109,8 @@ const hands = new Hands({
 hands.setOptions({ 
     maxNumHands: 1, 
     modelComplexity: 1, 
-    minDetectionConfidence: 0.6, // Disedikit turunin biar lebih responsif
-    minTrackingConfidence: 0.6 
+    minDetectionConfidence: 0.5, // Dibuat lebih sensitif untuk testing awal
+    minTrackingConfidence: 0.5 
 });
 
 hands.onResults((res: Results) => {
@@ -134,54 +134,65 @@ hands.onResults((res: Results) => {
     }
 });
 
-// Fix Video Preview untuk Production
+// Setup Video Preview (Wajib pakai attributes ini supaya muncul di Chrome/Vercel)
 const video = document.createElement('video');
 Object.assign(video.style, { 
     position:'fixed', bottom:'15px', left:'15px', width:'130px', 
-    borderRadius:'10px', transform:'scaleX(-1)', opacity:'0.4', border:'1px solid white',
-    zIndex: '1000' 
+    borderRadius:'10px', transform:'scaleX(-1)', opacity:'0.7', // Naikin opacity buat ngecek
+    border:'2px solid cyan', zIndex: '2000' 
 });
-// Atribut wajib buat iOS & Chrome Production
+
 video.setAttribute('autoplay', '');
 video.setAttribute('muted', '');
 video.setAttribute('playsinline', ''); 
 document.body.appendChild(video);
 
-async function startCamera() {
+// Fungsi Sakti buat ngejalanin kamera
+async function initCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: 640, height: 480, facingMode: "user" } 
+            video: { width: 640, height: 480 } 
         });
         video.srcObject = stream;
         
-        video.onloadedmetadata = () => {
-            video.play();
-            // Start detection loop
-            const detect = async () => {
-                if (video.readyState >= 2) {
-                    await hands.send({ image: video });
-                }
-                requestAnimationFrame(detect);
+        // Tunggu video bener-bener "siap" sebelum kirim ke MediaPipe
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                video.play();
+                resolve(true);
             };
-            detect();
+        });
+
+        const detect = async () => {
+            if (video.readyState >= 2) {
+                await hands.send({ image: video });
+            }
+            requestAnimationFrame(detect);
         };
+        detect();
+        console.log("Kamera & MediaPipe jalan!");
     } catch (err) {
-        console.error("Kamera Error bro:", err);
+        console.error("Gagal buka kamera:", err);
+        alert("Woy, aktifin izin kameranya di browser!");
     }
 }
 
-startCamera();
+// Jalankan fungsi kamera
+initCamera();
 
 // --- 5. ANIMATION LOOP ---
 function animate() {
     requestAnimationFrame(animate);
     const pos = geometry.attributes.position.array as Float32Array;
+    
+    // Smooth Transition
     for (let i = 0; i < pos.length; i++) {
         pos[i] += (targetArray[i] - pos[i]) * SMOOTHING;
     }
+    
     points.rotation.y += (rotY - points.rotation.y) * ROTATION_DAMPING;
     points.rotation.x += (rotX - points.rotation.x) * ROTATION_DAMPING;
-    points.rotation.z += 0.003;
+    points.rotation.z += 0.003; 
 
     geometry.attributes.position.needsUpdate = true;
     geometry.attributes.color.needsUpdate = true;
@@ -189,9 +200,14 @@ function animate() {
 }
 animate();
 
-// --- 6. DAT.GUI (ANTI ERROR) ---
+// --- 6. DAT.GUI ---
 const gui = new dat.GUI();
-const params = { kehalusan: SMOOTHING, skala: SHAPE_SCALE, ukuranTitik: material.size };
+const params = {
+    kehalusan: SMOOTHING,
+    skala: SHAPE_SCALE,
+    ukuranTitik: material.size
+};
+
 gui.add(params, 'kehalusan', 0.01, 0.2).name('Transition').onChange(v => SMOOTHING = v);
 gui.add(params, 'skala', 0.5, 4.0).name('Global Scale').onChange(v => {
     SHAPE_SCALE = v;
